@@ -36,8 +36,8 @@ const Register = () => {
                         <button
                             type="button"
                             className={`flex flex-col items-center justify-center p-4 border rounded-xl transition-all ${role === 'student'
-                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-600'
                                 }`}
                             onClick={() => setRole('student')}
                         >
@@ -47,8 +47,8 @@ const Register = () => {
                         <button
                             type="button"
                             className={`flex flex-col items-center justify-center p-4 border rounded-xl transition-all ${role === 'mentor'
-                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-600'
                                 }`}
                             onClick={() => setRole('mentor')}
                         >
@@ -61,7 +61,7 @@ const Register = () => {
                         <Input
                             id="name"
                             label="Full Name"
-                            placeholder="John Doe"
+                            placeholder="Enter your name"
                             value={formData.name}
                             onChange={handleChange}
                             required
@@ -70,7 +70,7 @@ const Register = () => {
                             id="email"
                             type="email"
                             label="Email Address"
-                            placeholder="you@example.com"
+                            placeholder="username@gmail.com"
                             value={formData.email}
                             onChange={handleChange}
                             required

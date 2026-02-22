@@ -51,7 +51,7 @@ const Home = () => {
                     </p>
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center space-y-4">
-                    <div className="bg-purple-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto text-purple-600">
+                    <div className="bg-red-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto text-purple-600">
                         <Users className="h-6 w-6" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900">Verified Mentors</h3>
