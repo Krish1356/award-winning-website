@@ -9,8 +9,8 @@ const StudentDashboard = () => {
     // Mock Data
     const skillLevel = 'Beginner';
     const recentQueries = [
-        { id: 1, title: 'How to use useEffect in React?', status: 'Resolved', date: '2023-10-25' },
-        { id: 2, title: 'Understanding Python Decorators', status: 'Pending', date: '2023-10-26' },
+        { id: 1, title: 'How to use useEffect in React?', status: 'Resolved', date: '2026-02-19' },
+        { id: 2, title: 'Understanding Python Decorators', status: 'Pending', date: '2026-02-21' },
     ];
 
     return (
