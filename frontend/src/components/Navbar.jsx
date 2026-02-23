@@ -15,7 +15,10 @@ const Navbar = () => {
                 <div className="flex justify-between h-16">
                     <div className="flex items-center">
                         <Link to="/" className="flex-shrink-0 flex items-center">
-                            <BookOpen className="h-8 w-8 text-purple-600" />
+                            <svg className="h-8 w-8 text-purple-600" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M 87.1 35 A 40 40 0 1 0 90 50 H 65" />
+                                <path d="M 63.2 35 A 20 20 0 1 0 63.2 65" />
+                            </svg>
                             <span className="ml-2 text-xl font-bold text-gray-900">GradConnect</span>
                         </Link>
                         <div className="hidden sm:ml-6 sm:flex sm:space-x-8">

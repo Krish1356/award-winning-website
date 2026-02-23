@@ -29,9 +29,6 @@ const StudentDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card>
                     <CardContent className="flex items-center space-x-4">
-                        <div className="p-3 bg-blue-100 rounded-full text-blue-600">
-                            <BookOpen className="h-6 w-6" />
-                        </div>
                         <div>
                             <p className="text-sm font-medium text-gray-500">Current Skill Level</p>
                             <h3 className="text-2xl font-bold text-gray-900">{skillLevel}</h3>
@@ -43,9 +40,6 @@ const StudentDashboard = () => {
                 </Card>
                 <Card>
                     <CardContent className="flex items-center space-x-4">
-                        <div className="p-3 bg-yellow-100 rounded-full text-yellow-600">
-                            <Clock className="h-6 w-6" />
-                        </div>
                         <div>
                             <p className="text-sm font-medium text-gray-500">Pending Queries</p>
                             <h3 className="text-2xl font-bold text-gray-900">1</h3>
@@ -54,9 +48,6 @@ const StudentDashboard = () => {
                 </Card>
                 <Card>
                     <CardContent className="flex items-center space-x-4">
-                        <div className="p-3 bg-green-100 rounded-full text-green-600">
-                            <CheckCircle className="h-6 w-6" />
-                        </div>
                         <div>
                             <p className="text-sm font-medium text-gray-500">Resolved Queries</p>
                             <h3 className="text-2xl font-bold text-gray-900">12</h3>
