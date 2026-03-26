@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card';
+import { insertIntoTable, generateMockEmbedding, findBestMentorForQuery } from '../lib/mockDB';
 
 const RaiseQuery = () => {
     const navigate = useNavigate();
@@ -18,9 +19,39 @@ const RaiseQuery = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Query submitted:', query);
-        // Mock submission
-        alert('Your query has been submitted! We are finding the best mentor for you.');
+        
+        const savedUser = localStorage.getItem('currentUser');
+        const currentUser = savedUser ? JSON.parse(savedUser) : null;
+        
+        // 1. Create the query record
+        const queryId = 'q' + Date.now();
+        insertIntoTable('queries', {
+            id: queryId,
+            student_id: currentUser ? currentUser.id : 'u1',
+            title: query.title,
+            description: query.description,
+            domain: query.domain,
+            created_at: new Date().toISOString(),
+            status: 'pending'
+        });
+
+        // 2. NLP MODULE: Generate Embedding for the query
+        const textToEmbed = `${query.title} ${query.description} ${query.domain}`;
+        const embedding = generateMockEmbedding(textToEmbed);
+        insertIntoTable('query_embeddings', {
+            query_id: queryId,
+            embedding_vector: embedding
+        });
+
+        // 3. HYBRID RECOMMENDATION ENGINE: Find best mentor
+        const bestMatch = findBestMentorForQuery(queryId);
+
+        if (bestMatch) {
+            alert(`Success! Based on ML Similarity (${bestMatch.logData.query_similarity_score}) and Skill Match (${bestMatch.logData.skill_match_score}), we matched you with ${bestMatch.mentor.name}!`);
+        } else {
+            alert('Your query has been submitted! We are finding the best mentor for you.');
+        }
+
         navigate('/dashboard');
     };
 
@@ -52,11 +83,12 @@ const RaiseQuery = () => {
                                 required
                             >
                                 <option value="">Select a domain...</option>
-                                <option value="web-dev">Web Development</option>
-                                <option value="data-science">Data Science</option>
-                                <option value="mobile-dev">Mobile Development</option>
-                                <option value="cyber-security">Cyber Security</option>
-                                <option value="cloud">Cloud Computing</option>
+                                <option value="Web Development">Web Development</option>
+                                <option value="Data Science">Data Science</option>
+                                <option value="Machine Learning">Machine Learning</option>
+                                <option value="Mobile Development">Mobile Development</option>
+                                <option value="Cyber Security">Cyber Security</option>
+                                <option value="Cloud Computing">Cloud Computing</option>
                             </select>
                         </div>
 

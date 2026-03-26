@@ -5,9 +5,31 @@ import Button from './ui/Button';
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const isLoggedIn = false; // Mock state for now
+    
+    const [currentUser, setCurrentUser] = useState(() => {
+        const saved = localStorage.getItem('currentUser');
+        return saved ? JSON.parse(saved) : null;
+    });
+
+    const isLoggedIn = !!currentUser;
+
+    // Listen to storage event so login sets the navbar automatically across tabs or without reload
+    React.useEffect(() => {
+        const handleStorage = () => {
+            const saved = localStorage.getItem('currentUser');
+            setCurrentUser(saved ? JSON.parse(saved) : null);
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, []);
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+    const handleLogout = () => {
+        localStorage.removeItem('currentUser');
+        setCurrentUser(null);
+        window.location.href = '/login';
+    };
 
     return (
         <nav className="bg-white border-b border-gray-200">
@@ -25,9 +47,11 @@ const Navbar = () => {
                             <Link to="/" className="border-transparent text-gray-500 hover:border-purple-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                                 Home
                             </Link>
-                            <Link to="/dashboard" className="border-transparent text-gray-500 hover:border-purple-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                Dashboard
-                            </Link>
+                            {isLoggedIn && (
+                                <Link to={currentUser.role === 'mentor' ? "/mentor/dashboard" : "/dashboard"} className="border-transparent text-gray-500 hover:border-purple-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    Dashboard
+                                </Link>
+                            )}
                             <Link to="/mentors" className="border-transparent text-gray-500 hover:border-purple-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                                 Mentors
                             </Link>
@@ -36,8 +60,8 @@ const Navbar = () => {
                     <div className="hidden sm:ml-6 sm:flex sm:items-center">
                         {isLoggedIn ? (
                             <div className="flex items-center space-x-4">
-                                <span className="text-gray-700 text-sm">Welcome, User</span>
-                                <Button variant="outline" size="sm">
+                                <span className="text-gray-700 text-sm font-medium">Welcome, {currentUser.name}</span>
+                                <Button variant="outline" size="sm" onClick={handleLogout}>
                                     <LogOut className="h-4 w-4 mr-2" />
                                     Logout
                                 </Button>
@@ -74,9 +98,11 @@ const Navbar = () => {
                         <Link to="/" className="bg-purple-50 border-purple-500 text-purple-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
                             Home
                         </Link>
-                        <Link to="/dashboard" className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
-                            Dashboard
-                        </Link>
+                        {isLoggedIn && (
+                            <Link to={currentUser.role === 'mentor' ? "/mentor/dashboard" : "/dashboard"} className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
+                                Dashboard
+                            </Link>
+                        )}
                         <Link to="/mentors" className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
                             Mentors
                         </Link>
@@ -88,8 +114,13 @@ const Navbar = () => {
                                     <User className="h-10 w-10 rounded-full bg-gray-100 p-2 text-gray-600" />
                                 </div>
                                 <div className="ml-3">
-                                    <div className="text-base font-medium text-gray-800">User Name</div>
-                                    <div className="text-sm font-medium text-gray-500">user@example.com</div>
+                                    <div className="text-base font-medium text-gray-800">{currentUser.name}</div>
+                                    <div className="text-sm font-medium text-gray-500">{currentUser.email}</div>
+                                </div>
+                                <div className="ml-auto">
+                                   <Button variant="ghost" size="sm" onClick={handleLogout}>
+                                        <LogOut className="h-5 w-5 text-gray-500 hover:text-red-500" />
+                                   </Button>
                                 </div>
                             </div>
                         ) : (

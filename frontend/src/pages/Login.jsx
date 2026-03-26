@@ -1,17 +1,32 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { getTable } from '../lib/mockDB';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card, { CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/Card';
 
 const Login = () => {
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Login attempt:', { email, password });
-        // TODO: Implement actual login logic
+        const users = getTable('users');
+        const user = users.find(u => u.email === email && u.password === password);
+        
+        if (user) {
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            if (user.role === 'mentor') {
+                navigate('/mentor/dashboard');
+            } else {
+                navigate('/dashboard');
+            }
+            // slight delay to let navbar pick up the new localstorage without a full context (in a real app we'd use Context provider)
+            window.dispatchEvent(new Event('storage'));
+        } else {
+            alert('Invalid credentials! Try alice@student.com / password123');
+        }
     };
 
     return (

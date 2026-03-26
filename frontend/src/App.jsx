@@ -8,6 +8,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import SkillAssessment from './pages/SkillAssessment';
 import RaiseQuery from './pages/RaiseQuery';
 import MentorDashboard from './pages/MentorDashboard';
+import Mentors from './pages/Mentors';
 import './App.css';
 
 
@@ -20,6 +21,7 @@ function App() {
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
+          <Route path="mentors" element={<Mentors />} />
 
           {/* Student Routes */}
           <Route path="dashboard" element={<StudentDashboard />} />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getTable, insertIntoTable, updateInTable, generateMockEmbedding, findBestMentorForQuery } from '../lib/mockDB';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Button from '../components/ui/Button';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -71,7 +72,36 @@ Return ONLY valid JSON in the exact following format, without markdown blocks or
                 throw new Error("Invalid response format from AI.");
             }
 
-            setQuestions(generatedQuestions);
+            // --- MockDB Integration: NLP & Assessment ---
+            insertIntoTable('ai_interactions', {
+                id: 'gen_' + Date.now(),
+                user_id: 'u1',
+                query: prompt,
+                response: cleanJson,
+                type: 'quiz',
+                timestamp: new Date().toISOString()
+            });
+
+            const quizId = 'quiz_' + Date.now();
+            insertIntoTable('quizzes', {
+                id: quizId,
+                domain: domain,
+                generated_by: 'gemini',
+                created_at: new Date().toISOString()
+            });
+            
+            generatedQuestions.forEach((q, i) => {
+                insertIntoTable('quiz_questions', {
+                    quiz_id: quizId,
+                    question: q.question,
+                    options: q.options,
+                    correct_answer: q.correctAnswerIndex,
+                    difficulty: experience
+                });
+            });
+
+            const annotatedQuestions = generatedQuestions.map(q => ({ ...q, quizId }));
+            setQuestions(annotatedQuestions);
             setStep('quiz');
 
         } catch (err) {
@@ -97,6 +127,68 @@ Return ONLY valid JSON in the exact following format, without markdown blocks or
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
         } else {
+            // --- MockDB Integration: Update Skill Profile ---
+            const finalScore = calculateScore();
+            const quizId = questions[0]?.quizId;
+            const savedUser = localStorage.getItem('currentUser');
+            const currentUser = savedUser ? JSON.parse(savedUser) : null;
+            const studentId = currentUser ? currentUser.id : 'u1';
+            
+            insertIntoTable('student_quiz_attempts', {
+                id: 'att_' + Date.now(),
+                student_id: studentId,
+                quiz_id: quizId,
+                score: finalScore,
+                time_taken: 120, // Mock time
+                created_at: new Date().toISOString()
+            });
+
+            const level = finalScore >= 80 ? 'Advanced' : finalScore >= 50 ? 'Intermediate' : 'Beginner';
+            
+            const existingProfile = getTable('student_skill_profile').find(s => s.student_id === studentId && s.domain === domain);
+            if (existingProfile) {
+                updateInTable('student_skill_profile', s => s.student_id === studentId && s.domain === domain, {
+                    level,
+                    avg_score: (existingProfile.avg_score + finalScore) / 2,
+                    last_updated: new Date().toISOString()
+                });
+            } else {
+                insertIntoTable('student_skill_profile', {
+                    student_id: studentId,
+                    domain: domain,
+                    level,
+                    avg_score: finalScore,
+                    improvement_rate: 0,
+                    confidence_score: finalScore / 100,
+                    last_updated: new Date().toISOString()
+                });
+            }
+
+            // --- Trigger Auto-Query and Connect with Mentor! ---
+            const queryId = 'q' + Date.now();
+            const queryTitle = `Skill Review Request: ${domain} (${level})`;
+            const queryDesc = `I just completed a skill assessment for ${domain} (${experience}) and scored ${finalScore}%. Can a mentor review my progress?`;
+            
+            insertIntoTable('queries', {
+                id: queryId,
+                student_id: studentId,
+                title: queryTitle,
+                description: queryDesc,
+                domain: domain,
+                score: finalScore,
+                created_at: new Date().toISOString(),
+                status: 'pending'
+            });
+
+            const embedding = generateMockEmbedding(`${queryTitle} ${queryDesc}`);
+            insertIntoTable('query_embeddings', {
+                query_id: queryId,
+                embedding_vector: embedding
+            });
+
+            // Engage Hybrid Recommendation Engine
+            findBestMentorForQuery(queryId);
+
             setStep('results');
         }
     };
