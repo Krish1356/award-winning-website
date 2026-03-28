@@ -9,6 +9,7 @@ import SkillAssessment from './pages/SkillAssessment';
 import RaiseQuery from './pages/RaiseQuery';
 import MentorDashboard from './pages/MentorDashboard';
 import Mentors from './pages/Mentors';
+import DomainMastery from './pages/DomainMastery';
 import './App.css';
 
 
@@ -26,6 +27,7 @@ function App() {
           {/* Student Routes */}
           <Route path="dashboard" element={<StudentDashboard />} />
           <Route path="assessment" element={<SkillAssessment />} />
+          <Route path="mastery" element={<DomainMastery />} />
           <Route path="query/new" element={<RaiseQuery />} />
 
           {/* Mentor Routes */}

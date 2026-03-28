@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getTable, insertIntoTable, updateInTable, generateMockEmbedding, findBestMentorForQuery } from '../lib/mockDB';
@@ -14,19 +14,25 @@ const SkillAssessment = () => {
     const [domain, setDomain] = useState('');
     const [experience, setExperience] = useState('');
     const [error, setError] = useState('');
+    const [matchedMentor, setMatchedMentor] = useState(null);
 
     // Quiz State
     const [questions, setQuestions] = useState([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswers, setSelectedAnswers] = useState({});
 
-    // Mock Historical Data
-    const [pastScores] = useState([
-        { date: 'Feb 1', score: 40 },
-        { date: 'Feb 10', score: 60 },
-        { date: 'Feb 15', score: 50 },
-    ]);
+    // We fetch history dynamically instead of mock hook data
     const mockDomainsExplored = 3;
+
+    // Auto-submit once the final question is answered so the user explicitly gets zero-latency redirects.
+    useEffect(() => {
+        if (step === 'quiz' && questions.length > 0 && currentQuestionIndex === questions.length - 1) {
+            if (selectedAnswers[currentQuestionIndex] !== undefined) {
+                handleNext();
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedAnswers[currentQuestionIndex], currentQuestionIndex, step, questions.length]);
 
     const generateQuestions = async () => {
         try {
@@ -187,9 +193,16 @@ Return ONLY valid JSON in the exact following format, without markdown blocks or
             });
 
             // Engage Hybrid Recommendation Engine
-            findBestMentorForQuery(queryId);
+            const bestMatch = findBestMentorForQuery(queryId);
+            setMatchedMentor(bestMatch);
 
-            setStep('results');
+            navigate('/mastery', { 
+                state: { 
+                    recentDomain: domain, 
+                    matchedMentor: bestMatch, 
+                    currentScore: finalScore 
+                } 
+            });
         }
     };
 
@@ -334,75 +347,7 @@ Return ONLY valid JSON in the exact following format, without markdown blocks or
         );
     };
 
-    const renderResults = () => {
-        const currentScore = calculateScore();
-        // Calculate mock improvement based on last score
-        const lastScore = pastScores[pastScores.length - 1].score;
-        const improvement = currentScore - lastScore;
 
-        // Append current score to graph data
-        const graphData = [...pastScores, { date: 'Today', score: currentScore }];
-
-        return (
-            <div className="space-y-8">
-                <div className="text-center">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2">Assessment Complete</h2>
-                    <p className="text-gray-500 text-lg">Here's how you performed in {domain}</p>
-                </div>
-
-                {/* Score Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="border border-gray-200 rounded-xl p-6 text-center bg-white shadow-sm">
-                        <p className="text-sm font-medium text-gray-500 mb-2">Current Score</p>
-                        <h3 className="text-4xl font-bold text-purple-600">{currentScore}%</h3>
-                    </div>
-
-                    <div className="border border-gray-200 rounded-xl p-6 text-center bg-white shadow-sm">
-                        <p className="text-sm font-medium text-gray-500 mb-2">Improvement Score</p>
-                        <h3 className={`text-4xl font-bold ${improvement >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {improvement >= 0 ? '+' : ''}{improvement}%
-                        </h3>
-                    </div>
-
-                    <div className="border border-gray-200 rounded-xl p-6 text-center bg-white shadow-sm">
-                        <p className="text-sm font-medium text-gray-500 mb-2">Domains Explored</p>
-                        <h3 className="text-4xl font-bold text-gray-900">{mockDomainsExplored}</h3>
-                    </div>
-                </div>
-
-                {/* Graph */}
-                <div className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm mt-8">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 text-center">Your Learning Progress</h3>
-                    <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={graphData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                <XAxis dataKey="date" axisLine={false} tickLine={false} />
-                                <YAxis domain={[0, 100]} axisLine={false} tickLine={false} />
-                                <Tooltip
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="score"
-                                    stroke="#9333EA"
-                                    strokeWidth={3}
-                                    dot={{ fill: '#9333EA', strokeWidth: 2, r: 4 }}
-                                    activeDot={{ r: 6 }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                <div className="flex justify-center pt-4">
-                    <Button onClick={() => navigate('/dashboard')} variant="primary">
-                        Return to Dashboard
-                    </Button>
-                </div>
-            </div>
-        );
-    };
 
     return (
         <div className="max-w-3xl mx-auto py-8 px-4">
@@ -417,7 +362,6 @@ Return ONLY valid JSON in the exact following format, without markdown blocks or
                     {step === 'setup' && renderSetup()}
                     {step === 'loading' && renderLoading()}
                     {step === 'quiz' && renderQuiz()}
-                    {step === 'results' && renderResults()}
                 </CardContent>
             </Card>
         </div>

@@ -71,8 +71,56 @@ const initialData = {
 
 // Initialize DB if not present
 export const initDB = () => {
-  if (!localStorage.getItem(DB_KEY)) {
+  const existingData = localStorage.getItem(DB_KEY);
+  if (!existingData) {
     localStorage.setItem(DB_KEY, JSON.stringify(initialData));
+  } else {
+    // Migrate old profiles that lack a password
+    try {
+      const parsed = JSON.parse(existingData);
+      let needsMigration = false;
+      // Auto-inject missing structural mentors into cache safely
+      initialData.users.forEach(initItem => {
+          if (!parsed.users.find(u => u.id === initItem.id)) {
+              parsed.users.push(initItem);
+              needsMigration = true;
+          }
+      });
+      initialData.mentor_profile.forEach(initItem => {
+          if (!parsed.mentor_profile.find(m => m.user_id === initItem.user_id)) parsed.mentor_profile.push(initItem);
+      });
+      initialData.mentor_expertise.forEach(initItem => {
+          if (!parsed.mentor_expertise.find(m => m.mentor_id === initItem.mentor_id)) parsed.mentor_expertise.push(initItem);
+      });
+      initialData.mentor_embeddings.forEach(initItem => {
+          if (!parsed.mentor_embeddings.find(m => m.mentor_id === initItem.mentor_id)) parsed.mentor_embeddings.push(initItem);
+      });
+      initialData.mentor_performance.forEach(initItem => {
+          if (!parsed.mentor_performance.find(m => m.mentor_id === initItem.mentor_id)) parsed.mentor_performance.push(initItem);
+      });
+
+      if (parsed.users) {
+        const prevLen = parsed.users.length;
+        parsed.users = parsed.users.filter(u => initialData.users.some(initU => initU.id === u.id));
+        if (parsed.mentor_profile) parsed.mentor_profile = parsed.mentor_profile.filter(m => initialData.mentor_profile.some(initM => initM.user_id === m.user_id));
+        if (parsed.mentor_expertise) parsed.mentor_expertise = parsed.mentor_expertise.filter(m => initialData.mentor_expertise.some(initM => initM.mentor_id === m.mentor_id));
+        if (parsed.mentor_embeddings) parsed.mentor_embeddings = parsed.mentor_embeddings.filter(m => initialData.mentor_embeddings.some(initM => initM.mentor_id === m.mentor_id));
+        if (parsed.mentor_performance) parsed.mentor_performance = parsed.mentor_performance.filter(m => initialData.mentor_performance.some(initM => initM.mentor_id === m.mentor_id));
+        if (parsed.users.length !== prevLen) needsMigration = true;
+
+        parsed.users.forEach(u => {
+          if (!u.password) {
+            u.password = 'password123';
+            needsMigration = true;
+          }
+        });
+      }
+      if (needsMigration) {
+        localStorage.setItem(DB_KEY, JSON.stringify(parsed));
+      }
+    } catch (e) {
+      console.error('Failed to migrate mock DB', e);
+    }
   }
 };
 
@@ -141,6 +189,7 @@ export const findBestMentorForQuery = (queryId) => {
 
   const queryEmb = db.query_embeddings.find(qe => qe.query_id === queryId)?.embedding_vector;
   const studentSkills = db.student_skill_profile.filter(s => s.student_id === query.student_id);
+  const studentDomainSkill = studentSkills.find(s => s.domain === query.domain);
   
   let bestMatch = null;
   let highestScore = -1;
@@ -157,14 +206,26 @@ export const findBestMentorForQuery = (queryId) => {
     const similarityScore = calculateSimilarity(queryEmb, mentorEmb) || 0;
     
     // 2. User Intelligence (Skill match verified)
-    const skillMatchScore = 1.0; 
+    const levelValues = { 'Beginner': 1, 'Intermediate': 2, 'Advanced': 3, 'Expert': 4 };
+    const studentLevelVal = studentDomainSkill ? (levelValues[studentDomainSkill.level] || 1) : 1;
+    const mentorLevelVal = levelValues[expertise.level] || 3;
+
+    let skillMatchScore = 0;
+    if (mentorLevelVal > studentLevelVal) {
+        if (mentorLevelVal - studentLevelVal === 1) skillMatchScore = 1.0;
+        else skillMatchScore = 0.8; 
+    } else if (mentorLevelVal === studentLevelVal && mentorLevelVal >= 3) {
+        skillMatchScore = 0.5; // Expert/Advanced teaching same level is okay
+    } else {
+        skillMatchScore = 0.2; // mentor is lower level
+    }
 
     // 3. Interaction Intelligence (Mentor Performance)
     const mentorPerf = db.mentor_performance.find(mp => mp.mentor_id === mentor.user_id);
     const ratingScore = mentorPerf ? (mentorPerf.avg_rating / 5) * 1.0 : 0.5; // normalized to 0-1
 
-    // Hybrid Formula: 50% Query Match, 50% Performance
-    const finalScore = (similarityScore * 0.5) + (ratingScore * 0.5);
+    // Hybrid Formula: 40% Text Match, 30% Rating Performance, 30% Assigned Skill Score Gap Match
+    const finalScore = (similarityScore * 0.4) + (ratingScore * 0.3) + (skillMatchScore * 0.3);
 
     // Logging this evaluation for Viva
     const logId = 'log_' + Date.now() + Math.random().toString(36).substr(2, 5);
@@ -208,4 +269,55 @@ export const findBestMentorForQuery = (queryId) => {
 
   writeDB(db);
   return bestMatch;
+};
+
+// --- MOCK FEEDBACK ENGINE ---
+export const submitFeedback = (queryId, studentId, rating, comment) => {
+  const db = readDB();
+  
+  const query = db.queries.find(q => q.id === queryId);
+  if (!query) return false;
+  
+  // Find the mentor who successfully accepted the query
+  const assignment = db.mentor_assignments.find(a => a.query_id === queryId && a.accepted === 'yes');
+  if (!assignment) return false;
+  
+  const mentorId = assignment.mentor_id;
+
+  // Insert feedback
+  db.feedback.push({
+      id: 'fb_' + Date.now(),
+      query_id: queryId,
+      student_id: studentId,
+      mentor_id: mentorId,
+      rating: rating,
+      comment: comment,
+      created_at: new Date().toISOString()
+  });
+
+  // Calculate new mentor rating and increment total sessions realistically mapped to resolved queries
+  const mentorPerfIndex = db.mentor_performance.findIndex(mp => mp.mentor_id === mentorId);
+  if (mentorPerfIndex !== -1) {
+      const perf = db.mentor_performance[mentorPerfIndex];
+      const newTotalSessions = perf.total_sessions + 1;
+      const newAvgRating = ((perf.avg_rating * perf.total_sessions) + rating) / newTotalSessions;
+      
+      db.mentor_performance[mentorPerfIndex] = {
+          ...perf,
+          total_sessions: newTotalSessions,
+          avg_rating: Number(newAvgRating.toFixed(1))
+      };
+      
+      // Also update the mentor_profile rating value which serves basic views
+      const profileIndex = db.mentor_profile.findIndex(mp => mp.user_id === mentorId);
+      if (profileIndex !== -1) {
+          db.mentor_profile[profileIndex] = {
+              ...db.mentor_profile[profileIndex],
+              avg_rating: Number(newAvgRating.toFixed(1))
+          };
+      }
+  }
+
+  writeDB(db);
+  return true;
 };

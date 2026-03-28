@@ -5,6 +5,8 @@ import Button from '../components/ui/Button';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import MentorSidebar from '../components/MentorSidebar';
+import ProfileBar from '../components/ProfileBar';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const MentorDashboard = () => {
     const savedUser = localStorage.getItem('currentUser');
@@ -17,6 +19,10 @@ const MentorDashboard = () => {
     // Mentor Response functionality
     const [replyingTo, setReplyingTo] = useState(null);
     const [replyText, setReplyText] = useState('');
+
+    // Analytics Modal State
+    const [viewingStudent, setViewingStudent] = useState(null);
+    const [studentChartData, setStudentChartData] = useState([]);
 
     useEffect(() => {
         // Load stats
@@ -50,10 +56,41 @@ const MentorDashboard = () => {
         };
         
         loadRequests();
-        // Polling for Viva demo effect
         const interval = setInterval(loadRequests, 3000);
         return () => clearInterval(interval);
-    }, []);
+    }, [mentorId]);
+
+    const handleViewProgress = (studentId, studentName) => {
+        // Fetch mentor's specific domain
+        const mentorDomain = getTable('mentor_expertise').find(e => e.mentor_id === mentorId)?.domain;
+
+        let attempts = getTable('student_quiz_attempts').filter(a => a.student_id === studentId);
+        const quizzes = getTable('quizzes');
+        
+        // Map domain to attempts
+        attempts = attempts.map(a => {
+            const domain = quizzes.find(q => q.id === a.quiz_id)?.domain || 'General';
+            return { ...a, domain };
+        });
+
+        // Filter attempts to ONLY match the mentor's area of expertise
+        if (mentorDomain) {
+            attempts = attempts.filter(a => a.domain === mentorDomain);
+        }
+
+        // Enforce chronological sorting
+        attempts.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        
+        // Format for Recharts tracking all attempts over time
+        const chartData = attempts.map((att, idx) => ({
+            attempt: `Test ${idx + 1}`,
+            score: att.score,
+            date: new Date(att.created_at).toLocaleDateString()
+        }));
+
+        setStudentChartData(chartData);
+        setViewingStudent(`${studentName} - ${mentorDomain || 'General'} History`);
+    };
 
     const handleAccept = (assignmentId, queryId) => {
         updateInTable('mentor_assignments', a => a.id === assignmentId, { accepted: 'yes' });
@@ -74,7 +111,11 @@ const MentorDashboard = () => {
     return (
         <div className="flex flex-col lg:flex-row gap-8">
             <div className="flex-1 space-y-6">
-                <h1 className="text-3xl font-bold text-gray-900">Mentor Dashboard</h1>
+                <div className="flex justify-between items-center">
+                    <h1 className="text-3xl font-bold text-purple-600 dark:text-purple-400">Mentor Dashboard</h1>
+                </div>
+
+                <ProfileBar user={currentUser} />
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -127,7 +168,9 @@ const MentorDashboard = () => {
                                         <h4 className="text-lg font-medium text-gray-900">{req.query}</h4>
                                         <div className="flex items-center gap-2 mt-1">
                                             <Badge variant="primary">{req.domain}</Badge>
-                                            <span className="text-sm text-gray-500">• {req.student}</span>
+                                            <span className="text-sm text-gray-500 cursor-pointer hover:underline text-blue-600" onClick={() => handleViewProgress(getTable('users').find(u => u.name === req.student)?.id, req.student)}>
+                                                • {req.student} (View Progress)
+                                            </span>
                                             <span className="text-sm text-gray-400">• {req.time}</span>
                                         </div>
                                     </div>
@@ -161,7 +204,34 @@ const MentorDashboard = () => {
                 </CardContent>
             </Card>
             </div>
-            <MentorSidebar />
+            {/* Student Progress Modal */}
+            {viewingStudent && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <Card className="w-full max-w-3xl bg-white dark:bg-gray-800">
+                        <CardHeader className="flex justify-between items-center border-b">
+                            <CardTitle>Lifetime Progress: {viewingStudent}</CardTitle>
+                            <Button variant="ghost" size="sm" onClick={() => setViewingStudent(null)}>Close</Button>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                            {studentChartData.length > 0 ? (
+                                <div className="h-72 w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={studentChartData}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="attempt" />
+                                            <YAxis domain={[0, 100]} />
+                                            <Tooltip />
+                                            <Line type="monotone" dataKey="score" stroke="#8884d8" strokeWidth={3} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            ) : (
+                                <p className="text-center text-gray-500 py-8">No assessment history recorded yet.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 };
