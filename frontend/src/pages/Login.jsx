@@ -25,7 +25,7 @@ const Login = () => {
             // slight delay to let navbar pick up the new localstorage without a full context (in a real app we'd use Context provider)
             window.dispatchEvent(new Event('storage'));
         } else {
-            alert('Invalid credentials! Try alice@student.com / password123');
+            alert('Invalid credentials! Try newton@student.com / password123');
         }
     };
 

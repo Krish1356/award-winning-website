@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { getTable, updateInTable } from '../lib/mockDB';
-import { Users, Star, MessageSquare } from 'lucide-react';
+import { Users, Star, MessageSquare, MessageCircle } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import MentorSidebar from '../components/MentorSidebar';
 import ProfileBar from '../components/ProfileBar';
+import ChatBox from '../components/ChatBox';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const MentorDashboard = () => {
@@ -23,6 +24,14 @@ const MentorDashboard = () => {
     // Analytics Modal State
     const [viewingStudent, setViewingStudent] = useState(null);
     const [studentChartData, setStudentChartData] = useState([]);
+
+    // Active Discussions State
+    const [activeDiscussions, setActiveDiscussions] = useState([]);
+    const [activeChat, setActiveChat] = useState({ isOpen: false, queryId: null, studentName: '' });
+
+    const handleOpenChat = (queryId, studentName) => {
+        setActiveChat({ isOpen: true, queryId, studentName });
+    };
 
     useEffect(() => {
         // Load stats
@@ -53,6 +62,20 @@ const MentorDashboard = () => {
                 };
             });
             setIncomingRequests(reqs.reverse());
+
+            const activeAssignments = getTable('mentor_assignments').filter(a => a.mentor_id === mentorId && a.accepted === 'yes');
+            const activeReqs = activeAssignments.map(a => {
+                const q = queries.find(qi => qi.id === a.query_id);
+                const u = q ? users.find(ui => ui.id === q.student_id) : null;
+                return {
+                    id: a.id,
+                    query_id: q?.id,
+                    student: u ? u.name : 'Unknown',
+                    query: q ? q.title : 'No Title',
+                    domain: q ? q.domain : 'General',
+                };
+            });
+            setActiveDiscussions(activeReqs.reverse());
         };
         
         loadRequests();
@@ -137,7 +160,15 @@ const MentorDashboard = () => {
                         </div>
                         <div>
                             <p className="text-sm font-medium text-gray-500">Average Rating</p>
-                            <h3 className="text-2xl font-bold text-gray-900">{stats.rating}</h3>
+                            <div className="flex items-baseline gap-2 mt-1">
+                                <h3 className="text-2xl font-bold text-gray-900">{stats.rating}</h3>
+                                <span className="text-sm text-gray-500 font-medium">/ 5.0</span>
+                            </div>
+                            <p className="text-xs font-semibold text-green-600 mt-1">
+                                {stats.rating >= 4.8 ? "Exceptional 🌟" : 
+                                 stats.rating >= 4.5 ? "Top Rated ✨" : 
+                                 stats.rating >= 4.0 ? "Great Job 👍" : "Keep it up 💪"}
+                            </p>
                         </div>
                     </CardContent>
                 </Card>
@@ -203,6 +234,37 @@ const MentorDashboard = () => {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Active Discussions */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Active Discussions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {activeDiscussions.map((disc) => (
+                            <div key={disc.id} className="flex justify-between items-center p-4 border rounded-lg bg-gray-50 mb-4 transition transform hover:-translate-y-1 hover:shadow-md">
+                                <div>
+                                    <h4 className="text-lg font-medium text-gray-900">{disc.query}</h4>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <Badge variant="success">{disc.domain}</Badge>
+                                        <span className="text-sm text-gray-500">• {disc.student}</span>
+                                    </div>
+                                </div>
+                                <div className="mt-4 sm:mt-0">
+                                    <Button variant="outline" size="sm" onClick={() => handleOpenChat(disc.query_id, disc.student)}>
+                                        <MessageCircle className="h-4 w-4 mr-1 inline text-blue-500" />
+                                        Chat
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                        {activeDiscussions.length === 0 && (
+                            <p className="text-center text-gray-500 py-4">You have no active discussions.</p>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
             </div>
             {/* Student Progress Modal */}
             {viewingStudent && (
@@ -231,6 +293,16 @@ const MentorDashboard = () => {
                         </CardContent>
                     </Card>
                 </div>
+            )}
+
+            {/* Chat Box Widget */}
+            {activeChat.isOpen && (
+                <ChatBox 
+                    queryId={activeChat.queryId} 
+                    currentUser={currentUser} 
+                    onClose={() => setActiveChat({ isOpen: false, queryId: null, studentName: '' })} 
+                    title={`Chat with ${activeChat.studentName}`}
+                />
             )}
         </div>
     );

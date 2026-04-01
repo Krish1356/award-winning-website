@@ -52,6 +52,7 @@ Return ONLY valid JSON in the exact following format, without markdown blocks or
 [
   {
     "question": "Question text here",
+    "topic": "Short Specific Sub-Topic String (e.g. React Hooks, Network Protocols)",
     "options": ["Option A", "Option B", "Option C", "Option D"],
     "correctAnswerIndex": 0
   }
@@ -129,16 +130,42 @@ Return ONLY valid JSON in the exact following format, without markdown blocks or
         }));
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
         } else {
             // --- MockDB Integration: Update Skill Profile ---
+            setStep('loading');
             const finalScore = calculateScore();
             const quizId = questions[0]?.quizId;
             const savedUser = localStorage.getItem('currentUser');
             const currentUser = savedUser ? JSON.parse(savedUser) : null;
             const studentId = currentUser ? currentUser.id : 'u1';
+            
+            // Sub-Topic Extraction & Persistence
+            questions.forEach((q, index) => {
+                const isCorrect = selectedAnswers[index] === q.correctAnswerIndex;
+                const existingTopic = getTable('student_topic_performance').find(t => t.student_id === studentId && t.topic === q.topic && t.domain === domain);
+                if (existingTopic) {
+                    updateInTable('student_topic_performance', 
+                        t => t.student_id === studentId && t.topic === q.topic && t.domain === domain, 
+                        {
+                            total_attempts: existingTopic.total_attempts + 1,
+                            correct_answers: existingTopic.correct_answers + (isCorrect ? 1 : 0),
+                            last_updated: new Date().toISOString()
+                        }
+                    );
+                } else {
+                    insertIntoTable('student_topic_performance', {
+                        student_id: studentId,
+                        domain: domain,
+                        topic: q.topic || 'General',
+                        total_attempts: 1,
+                        correct_answers: isCorrect ? 1 : 0,
+                        last_updated: new Date().toISOString()
+                    });
+                }
+            });
             
             insertIntoTable('student_quiz_attempts', {
                 id: 'att_' + Date.now(),
@@ -186,14 +213,14 @@ Return ONLY valid JSON in the exact following format, without markdown blocks or
                 status: 'pending'
             });
 
-            const embedding = generateMockEmbedding(`${queryTitle} ${queryDesc}`);
+            const embedding = await generateMockEmbedding(`${queryTitle} ${queryDesc}`);
             insertIntoTable('query_embeddings', {
                 query_id: queryId,
                 embedding_vector: embedding
             });
 
             // Engage Hybrid Recommendation Engine
-            const bestMatch = findBestMentorForQuery(queryId);
+            const bestMatch = await findBestMentorForQuery(queryId);
             setMatchedMentor(bestMatch);
 
             navigate('/mastery', { 
@@ -234,7 +261,7 @@ Return ONLY valid JSON in the exact following format, without markdown blocks or
                 >
                     <option value="">Select a domain...</option>
                     <option value="Web Development">Web Development</option>
-                    <option value="Data Science">Data Science</option>
+                    <option value="Machine Learning">Machine Learning</option>
                     <option value="Mobile Development">Mobile Development</option>
                     <option value="Cyber Security">Cyber Security</option>
                 </select>
@@ -295,7 +322,9 @@ Return ONLY valid JSON in the exact following format, without markdown blocks or
     const renderLoading = () => (
         <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-            <p className="text-gray-600 font-medium">Generating your custom AI assessment...</p>
+            <p className="text-gray-600 font-medium">
+                {currentQuestionIndex > 0 ? 'Analyzing skills & running AI NLP Embedding Models...' : 'Generating your custom AI assessment...'}
+            </p>
         </div>
     );
 

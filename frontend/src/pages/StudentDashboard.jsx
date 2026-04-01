@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getTable, submitFeedback } from '../lib/mockDB';
-import { PlusCircle, BookOpen, Clock, CheckCircle, Eye, Star } from 'lucide-react';
+import { PlusCircle, BookOpen, Clock, CheckCircle, Eye, Star, MessageCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Button from '../components/ui/Button';
 import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import StudentSidebar from '../components/StudentSidebar';
 import ProfileBar from '../components/ProfileBar';
+import ChatBox from '../components/ChatBox';
 
 const StudentDashboard = () => {
     const savedUser = localStorage.getItem('currentUser');
@@ -19,11 +20,26 @@ const StudentDashboard = () => {
     const [stats, setStats] = useState({ pending: 0, resolved: 0 });
     const [feedbacks, setFeedbacks] = useState([]);
     const [graphData, setGraphData] = useState([]);
+    const [recommendedMentors, setRecommendedMentors] = useState([]);
+    const [skillStrengths, setSkillStrengths] = useState({ strong: [], weak: [] });
 
     // Feedback Modal State
     const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, queryId: null });
     const [rating, setRating] = useState(5);
     const [comment, setComment] = useState('');
+
+    // Chat Box State
+    const [activeChat, setActiveChat] = useState({ isOpen: false, queryId: null, mentorName: '' });
+
+    const handleOpenChat = (query) => {
+        const assignment = getTable('mentor_assignments').find(a => a.query_id === query.id && a.accepted === 'yes');
+        const mentor = assignment ? getTable('users').find(u => u.id === assignment.mentor_id) : null;
+        setActiveChat({
+            isOpen: true,
+            queryId: query.id,
+            mentorName: mentor ? mentor.name : 'Mentor'
+        });
+    };
 
     useEffect(() => {
         const allQueries = getTable('queries').filter(q => q.student_id === studentId);
@@ -41,6 +57,27 @@ const StudentDashboard = () => {
             // Sort to grab the most recently updated skill dynamically
             const latestSkill = [...skills].sort((a, b) => new Date(b.last_updated) - new Date(a.last_updated))[0];
             setSkillLevel(latestSkill.level);
+
+            const targetDomain = latestSkill.domain;
+            const mentorsInDomain = getTable('mentor_expertise')
+                .filter(me => me.domain === targetDomain)
+                .map(me => {
+                    const userObj = getTable('users').find(u => u.id === me.mentor_id);
+                    const mentorProfile = getTable('mentor_profile').find(p => p.user_id === me.mentor_id);
+                    return { ...userObj, ...me, avg_rating: mentorProfile?.avg_rating || 5.0 };
+                });
+            setRecommendedMentors(mentorsInDomain);
+
+            // Compute Strong and Weak dynamically mapped Sub-topics
+            const topicPerformance = getTable('student_topic_performance').filter(t => t.student_id === studentId);
+            const calculatedTopics = topicPerformance.map(t => ({
+                domain: t.domain,
+                topic: t.topic,
+                avg_score: Math.round((t.correct_answers / t.total_attempts) * 100)
+            }));
+            const strong = calculatedTopics.filter(t => t.avg_score >= 70);
+            const weak = calculatedTopics.filter(t => t.avg_score < 70);
+            setSkillStrengths({ strong, weak });
         }
 
         const attempts = getTable('student_quiz_attempts').filter(a => a.student_id === studentId);
@@ -138,6 +175,86 @@ const StudentDashboard = () => {
                 </CardContent>
             </Card>
 
+            {/* Strengths & Weaknesses */}
+            {(skillStrengths.strong.length > 0 || skillStrengths.weak.length > 0) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-green-600">Strong Topics</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {skillStrengths.strong.length > 0 ? (
+                                <ul className="space-y-3">
+                                    {skillStrengths.strong.map((s, idx) => (
+                                        <li key={idx} className="flex justify-between items-center p-3 border border-green-200 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                                            <div>
+                                                <span className="block font-bold text-green-900 dark:text-green-100">{s.topic}</span>
+                                                <span className="block text-xs text-green-700 dark:text-green-300 font-medium">{s.domain}</span>
+                                            </div>
+                                            <Badge variant="success">{s.avg_score}%</Badge>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-gray-500 text-sm">No strong topics yet. Keep practicing!</p>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-red-500">Poor Topics</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {skillStrengths.weak.length > 0 ? (
+                                <ul className="space-y-3">
+                                    {skillStrengths.weak.map((s, idx) => (
+                                        <li key={idx} className="flex justify-between items-center p-3 border border-red-200 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                            <div>
+                                                <span className="block font-bold text-red-900 dark:text-red-100">{s.topic}</span>
+                                                <span className="block text-xs text-red-700 dark:text-red-300 font-medium">{s.domain}</span>
+                                            </div>
+                                            <Badge variant="error" className="bg-red-100 text-red-800">{s.avg_score}%</Badge>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-gray-500 text-sm">No poor topics! Great job.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Recommended Mentors */}
+            {recommendedMentors.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Recommended Mentors</CardTitle>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Based on your recent mastery of {recommendedMentors[0].domain}</p>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {recommendedMentors.map(mentor => (
+                                <div key={mentor.id} className="border border-gray-200 dark:border-gray-700 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 flex flex-col justify-between hover:shadow-md transition">
+                                    <div>
+                                        <h4 className="font-semibold text-lg text-gray-900 dark:text-white">{mentor.name}</h4>
+                                        <p className="text-sm text-purple-600 dark:text-purple-400 font-medium my-1">{mentor.level} in {mentor.domain}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">{mentor.skills_text}</p>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-4">
+                                        <div className="flex items-center text-sm font-medium text-yellow-500">
+                                            <Star className="h-4 w-4 fill-current mr-1" />
+                                            {mentor.avg_rating.toFixed(1)} Rating
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Recent Queries */}
             <Card>
                 <CardHeader>
@@ -176,6 +293,12 @@ const StudentDashboard = () => {
                                                     <Eye className="h-4 w-4 mr-2 inline" />
                                                     View Response
                                                 </Button>
+                                                {query.status === 'resolved' && (
+                                                    <Button variant="outline" size="sm" onClick={() => handleOpenChat(query)}>
+                                                        <MessageCircle className="h-4 w-4 mr-1 inline text-blue-500" />
+                                                        Chat
+                                                    </Button>
+                                                )}
                                                 {query.status === 'resolved' && !feedbacks.some(f => f.query_id === query.id) && (
                                                     <Button variant="outline" size="sm" onClick={() => {
                                                         setFeedbackModal({ isOpen: true, queryId: query.id });
@@ -247,6 +370,16 @@ const StudentDashboard = () => {
                         </CardContent>
                     </Card>
                 </div>
+            )}
+
+            {/* Chat Box Widget */}
+            {activeChat.isOpen && (
+                <ChatBox 
+                    queryId={activeChat.queryId} 
+                    currentUser={currentUser} 
+                    onClose={() => setActiveChat({ isOpen: false, queryId: null, mentorName: '' })} 
+                    title={`Chat with ${activeChat.mentorName}`}
+                />
             )}
         </div>
     );

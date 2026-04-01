@@ -1,25 +1,41 @@
 // This file simulates a Database with LocalStorage to persist data for the Viva Demo
 // It encompasses all 6 requested Intelligence Types.
 
-const DB_KEY = 'smart_mentorship_db';
+const DB_KEY = 'smart_mentorship_db_v8';
 
 const initialData = {
   // 1️⃣ USER TABLES (Base Layer)
   users: [
-    { id: 'u1', name: 'Alice Student', email: 'alice@student.com', role: 'student', password: 'password123', created_at: new Date().toISOString() },
-    { id: 'u2', name: 'Bob Mentor', email: 'bob@mentor.com', role: 'mentor', password: 'password123', created_at: new Date().toISOString() },
-    { id: 'u3', name: 'Charlie Mentor', email: 'charlie@mentor.com', role: 'mentor', password: 'password123', created_at: new Date().toISOString() },
-    { id: 'u4', name: 'Diana Advanced', email: 'diana@mentor.com', role: 'mentor', password: 'password123', created_at: new Date().toISOString() },
-    { id: 'u5', name: 'Evan Expert', email: 'evan@mentor.com', role: 'mentor', password: 'password123', created_at: new Date().toISOString() }
+    { id: 'u1', name: 'Newton', email: 'newton@student.com', role: 'student', password: 'password123', created_at: new Date().toISOString() },
+    { id: 'u2', name: 'Senthil Kumar', email: 'senthil@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() },
+    { id: 'u3', name: 'Dr. Prakash', email: 'prakash@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() },
+    { id: 'u4', name: 'Dr. MMK Venamoorthy', email: 'venamoorthy@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() },
+    { id: 'u5', name: 'Mr. Tiwari', email: 'tiwari@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() },
+    { id: 'u6', name: 'Dr. Geetha S.', email: 'geetha@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() },
+    { id: 'u7', name: 'Dr. Mohit', email: 'mohit@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() },
+    { id: 'u8', name: 'Mr. Karan Kumar', email: 'karan@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() },
+    { id: 'u9', name: 'Dr. Kshama Trivedi', email: 'kshama@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() },
+    { id: 'u10', name: 'Krish Patel', email: 'krish@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() },
+    { id: 'u11', name: 'Kaushik Murudkar', email: 'kaushik@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() },
+    { id: 'u12', name: 'Kunal Vasdani', email: 'kunal@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() },
+    { id: 'u13', name: 'Vraj Shah', email: 'vraj@mentor.com', role: 'mentor', password: 'password', created_at: new Date().toISOString() }
   ],
   student_profile: [
     { user_id: 'u1', college: 'Tech University', branch: 'Computer Science', target_role: 'Machine Learning Engineer' }
   ],
   mentor_profile: [
-    { user_id: 'u2', experience_years: 5, bio: 'Data Scientist at BigTech', availability_status: 'available', avg_rating: 4.8 },
-    { user_id: 'u3', experience_years: 8, bio: 'Senior NLP Engineer', availability_status: 'available', avg_rating: 4.9 },
-    { user_id: 'u4', experience_years: 4, bio: 'Web Development Lead', availability_status: 'available', avg_rating: 4.6 },
-    { user_id: 'u5', experience_years: 12, bio: 'Chief Security Officer', availability_status: 'available', avg_rating: 5.0 }
+    { user_id: 'u2', experience_years: 7, bio: 'Machine Learning Specialist focusing on Advanced AI', availability_status: 'available', avg_rating: 4.8 },
+    { user_id: 'u3', experience_years: 3, bio: 'Teaching foundations of Machine Learning', availability_status: 'available', avg_rating: 4.5 },
+    { user_id: 'u4', experience_years: 5, bio: 'Web Development Intermediate Architect', availability_status: 'available', avg_rating: 4.7 },
+    { user_id: 'u5', experience_years: 2, bio: 'Web Technologies basics instructor', availability_status: 'available', avg_rating: 4.4 },
+    { user_id: 'u6', experience_years: 6, bio: 'Cyber Security Consultant and Auditor', availability_status: 'available', avg_rating: 4.9 },
+    { user_id: 'u7', experience_years: 1, bio: 'Cyber Security Awareness and Basics', availability_status: 'available', avg_rating: 4.2 },
+    { user_id: 'u8', experience_years: 2, bio: 'Mobile App fundamentals using Flutter', availability_status: 'available', avg_rating: 4.3 },
+    { user_id: 'u9', experience_years: 8, bio: 'Senior Mobile Apps Developer natively in Swift/Kotlin', availability_status: 'available', avg_rating: 4.9 },
+    { user_id: 'u10', experience_years: 5, bio: 'Data Scientist at BigTech', availability_status: 'available', avg_rating: 4.8 },
+    { user_id: 'u11', experience_years: 4, bio: 'Web Development Lead', availability_status: 'available', avg_rating: 4.6 },
+    { user_id: 'u12', experience_years: 12, bio: 'Chief Security Officer', availability_status: 'available', avg_rating: 5.0 },
+    { user_id: 'u13', experience_years: 8, bio: 'Senior Mobile App Developer', availability_status: 'available', avg_rating: 4.9 }
   ],
 
   // 2️⃣ NLP MODULE DATA (Query Understanding)
@@ -30,16 +46,32 @@ const initialData = {
     { query_id: 'q1', embedding_vector: [0.12, 0.45, 0.88, 0.32] } // Mock embedding
   ],
   mentor_expertise: [
-    { mentor_id: 'u2', domain: 'Machine Learning', skills_text: 'Machine Learning, Python, Data Science, Pandas', level: 'Intermediate' },
-    { mentor_id: 'u3', domain: 'Machine Learning', skills_text: 'Machine Learning, Python, NLP, Deep Learning, Pytorch', level: 'Expert' },
-    { mentor_id: 'u4', domain: 'Web Development', skills_text: 'React, Node.js, HTML, CSS, JavaScript', level: 'Advanced' },
-    { mentor_id: 'u5', domain: 'Cyber Security', skills_text: 'Network Security, Penetration Testing, Cryptography', level: 'Expert' }
+    { mentor_id: 'u2', domain: 'Machine Learning', skills_text: 'Machine Learning, Deep Learning, Neural Networks', level: 'Advanced' },
+    { mentor_id: 'u3', domain: 'Machine Learning', skills_text: 'Python, Basics of ML, Pandas, Regression', level: 'Beginner' },
+    { mentor_id: 'u4', domain: 'Web Development', skills_text: 'React, Node.js, Express, Full-stack', level: 'Intermediate' },
+    { mentor_id: 'u5', domain: 'Web Development', skills_text: 'HTML, CSS, JavaScript Basics', level: 'Beginner' },
+    { mentor_id: 'u6', domain: 'Cyber Security', skills_text: 'Penetration Testing, Cryptography, Networks', level: 'Intermediate' },
+    { mentor_id: 'u7', domain: 'Cyber Security', skills_text: 'Basic IT Security, Firewalls setup', level: 'Beginner' },
+    { mentor_id: 'u8', domain: 'Mobile Development', skills_text: 'Flutter Basics, React Native Hooks', level: 'Beginner' },
+    { mentor_id: 'u9', domain: 'Mobile Development', skills_text: 'Swift, Kotlin, Native App Architecture', level: 'Intermediate' },
+    { mentor_id: 'u10', domain: 'Machine Learning', skills_text: 'Machine Learning, Python, Data Science, Pandas', level: 'Intermediate' },
+    { mentor_id: 'u11', domain: 'Web Development', skills_text: 'React, Node.js, HTML, CSS, JavaScript', level: 'Advanced' },
+    { mentor_id: 'u12', domain: 'Cyber Security', skills_text: 'Network Security, Penetration Testing, Cryptography', level: 'Expert' },
+    { mentor_id: 'u13', domain: 'Mobile Development', skills_text: 'React Native, Flutter, Swift, Kotlin, Mobile App Development', level: 'Expert' }
   ],
   mentor_embeddings: [
-    { mentor_id: 'u2', embedding_vector: [0.15, 0.42, 0.81, 0.30] },
-    { mentor_id: 'u3', embedding_vector: [0.10, 0.50, 0.90, 0.45] },
-    { mentor_id: 'u4', embedding_vector: [0.60, 0.10, 0.30, 0.80] },
-    { mentor_id: 'u5', embedding_vector: [0.20, 0.80, 0.10, 0.70] }
+    { mentor_id: 'u2', embedding_vector: [0.1] },
+    { mentor_id: 'u3', embedding_vector: [0.1] },
+    { mentor_id: 'u4', embedding_vector: [0.1] },
+    { mentor_id: 'u5', embedding_vector: [0.1] },
+    { mentor_id: 'u6', embedding_vector: [0.1] },
+    { mentor_id: 'u7', embedding_vector: [0.1] },
+    { mentor_id: 'u8', embedding_vector: [0.1] },
+    { mentor_id: 'u9', embedding_vector: [0.1] },
+    { mentor_id: 'u10', embedding_vector: [0.1] },
+    { mentor_id: 'u11', embedding_vector: [0.1] },
+    { mentor_id: 'u12', embedding_vector: [0.1] },
+    { mentor_id: 'u13', embedding_vector: [0.1] }
   ],
 
   // 3️⃣ SKILL ASSESSMENT MODULE
@@ -50,16 +82,28 @@ const initialData = {
     { student_id: 'u1', domain: 'Machine Learning', level: 'Beginner', avg_score: 45, improvement_rate: 0.1, confidence_score: 0.6, last_updated: new Date().toISOString() },
     { student_id: 'u1', domain: 'Python', level: 'Intermediate', avg_score: 75, improvement_rate: 0.5, confidence_score: 0.8, last_updated: new Date().toISOString() }
   ],
+  student_topic_performance: [
+    { student_id: 'u1', domain: 'Machine Learning', topic: 'Neural Networks', total_attempts: 2, correct_answers: 0, last_updated: new Date().toISOString() },
+    { student_id: 'u1', domain: 'Python', topic: 'List Comprehension', total_attempts: 2, correct_answers: 2, last_updated: new Date().toISOString() }
+  ],
 
   // 4️⃣ INTERACTION DATA (For Recommendation)
   mentor_assignments: [],
   chat_messages: [],
   feedback: [],
   mentor_performance: [
-    { mentor_id: 'u2', avg_rating: 4.8, total_sessions: 24, success_rate: 95, avg_response_time: 15 },
-    { mentor_id: 'u3', avg_rating: 4.9, total_sessions: 40, success_rate: 98, avg_response_time: 10 },
-    { mentor_id: 'u4', avg_rating: 4.6, total_sessions: 15, success_rate: 90, avg_response_time: 25 },
-    { mentor_id: 'u5', avg_rating: 5.0, total_sessions: 80, success_rate: 100, avg_response_time: 5 }
+    { mentor_id: 'u2', avg_rating: 4.8, total_sessions: 50, success_rate: 95, avg_response_time: 10 },
+    { mentor_id: 'u3', avg_rating: 4.5, total_sessions: 20, success_rate: 85, avg_response_time: 25 },
+    { mentor_id: 'u4', avg_rating: 4.7, total_sessions: 40, success_rate: 90, avg_response_time: 15 },
+    { mentor_id: 'u5', avg_rating: 4.4, total_sessions: 10, success_rate: 80, avg_response_time: 30 },
+    { mentor_id: 'u6', avg_rating: 4.9, total_sessions: 60, success_rate: 98, avg_response_time: 5 },
+    { mentor_id: 'u7', avg_rating: 4.2, total_sessions: 5, success_rate: 75, avg_response_time: 40 },
+    { mentor_id: 'u8', avg_rating: 4.3, total_sessions: 15, success_rate: 85, avg_response_time: 20 },
+    { mentor_id: 'u9', avg_rating: 4.9, total_sessions: 45, success_rate: 95, avg_response_time: 12 },
+    { mentor_id: 'u10', avg_rating: 4.8, total_sessions: 24, success_rate: 95, avg_response_time: 15 },
+    { mentor_id: 'u11', avg_rating: 4.6, total_sessions: 15, success_rate: 90, avg_response_time: 25 },
+    { mentor_id: 'u12', avg_rating: 5.0, total_sessions: 80, success_rate: 100, avg_response_time: 5 },
+    { mentor_id: 'u13', avg_rating: 4.9, total_sessions: 40, success_rate: 98, avg_response_time: 10 }
   ],
 
   // 5️⃣ HYBRID RECOMMENDATION (CONVERGENCE POINT)
@@ -148,29 +192,24 @@ export const insertIntoTable = (tableName, record) => {
   return record;
 };
 
-export const updateInTable = (tableName, queryFunc, updateData) => {
+import { generateEmbedding } from './embeddingService';
+
+export const updateInTable = (tableName, predicate, updates) => {
   const db = readDB();
-  if (!db[tableName]) return;
-  
-  const index = db[tableName].findIndex(queryFunc);
+  const index = (db[tableName] || []).findIndex(predicate);
   if (index !== -1) {
-    db[tableName][index] = { ...db[tableName][index], ...updateData };
+    db[tableName][index] = { ...db[tableName][index], ...updates };
     writeDB(db);
-    return db[tableName][index];
   }
 };
 
-// --- MOCK RECOMMENDATION ENGINE ---
-
-// Simple mock embedding generator for text
-export const generateMockEmbedding = (text) => {
-  // Just creates a random vector of 4 dimensions based slightly on text length
-  return Array.from({ length: 4 }, () => Math.random());
+export const generateMockEmbedding = async (text) => {
+  return await generateEmbedding(text);
 };
 
 // Cosine similarity mock
 export const calculateSimilarity = (vecA, vecB) => {
-  if (!vecA || !vecB) return 0;
+  if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
   let dotProduct = 0;
   let normA = 0;
   let normB = 0;
@@ -182,7 +221,7 @@ export const calculateSimilarity = (vecA, vecB) => {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 };
 
-export const findBestMentorForQuery = (queryId) => {
+export const findBestMentorForQuery = async (queryId) => {
   const db = readDB();
   const query = db.queries.find(q => q.id === queryId);
   if (!query) return null;
@@ -194,15 +233,30 @@ export const findBestMentorForQuery = (queryId) => {
   let bestMatch = null;
   let highestScore = -1;
 
-  db.mentor_profile.forEach(mentor => {
+  for (const mentor of db.mentor_profile) {
     // STRICT DOMAIN FILTER: ONLY MENTORS EXPERT IN THIS DOMAIN CAN ANSWER!
     const expertise = db.mentor_expertise.find(me => me.mentor_id === mentor.user_id);
     if (!expertise || expertise.domain !== query.domain) {
-        return; // Hard reject. This mentor cannot see or answer this query.
+        continue; // Hard reject. This mentor cannot see or answer this query.
     }
 
     // 1. Text Intelligence (Query Similarity)
-    const mentorEmb = db.mentor_embeddings.find(me => me.mentor_id === mentor.user_id)?.embedding_vector;
+    let mentorEmbRow = db.mentor_embeddings.find(me => me.mentor_id === mentor.user_id);
+    let mentorEmb = mentorEmbRow?.embedding_vector;
+
+    // LAZY REAL EMBEDDING GENERATION
+    // Since initialData is mock 4 dim array, we lazy evaluate true 384 dim arrays to prevent browser blocking
+    if (mentorEmb && mentorEmb.length < 10) {
+        const skillsText = expertise.skills_text + " " + expertise.domain + " " + mentor.bio;
+        mentorEmb = await generateEmbedding(skillsText);
+        // Update it in the local state so the rest of the app doesn't refetch
+        if (mentorEmbRow) {
+            mentorEmbRow.embedding_vector = mentorEmb;
+            writeDB(db); // persist
+        }
+    }
+
+    // Since generateEmbedding creates true vectors mapped mathematically via huggingface
     const similarityScore = calculateSimilarity(queryEmb, mentorEmb) || 0;
     
     // 2. User Intelligence (Skill match verified)
@@ -211,13 +265,16 @@ export const findBestMentorForQuery = (queryId) => {
     const mentorLevelVal = levelValues[expertise.level] || 3;
 
     let skillMatchScore = 0;
-    if (mentorLevelVal > studentLevelVal) {
-        if (mentorLevelVal - studentLevelVal === 1) skillMatchScore = 1.0;
-        else skillMatchScore = 0.8; 
-    } else if (mentorLevelVal === studentLevelVal && mentorLevelVal >= 3) {
-        skillMatchScore = 0.5; // Expert/Advanced teaching same level is okay
+    // PERFECT MATCH if the mentor is specifically mapped to teach the student's exact current skill bracket
+    if (mentorLevelVal === studentLevelVal) {
+        skillMatchScore = 1.0;
+    } else if (mentorLevelVal > studentLevelVal) {
+        // Mentor is higher level, still an okay fit but maybe overqualified 
+        if (mentorLevelVal - studentLevelVal === 1) skillMatchScore = 0.8;
+        else skillMatchScore = 0.6; 
     } else {
-        skillMatchScore = 0.2; // mentor is lower level
+        // Mentor is assigned to a lower level than the student's competence
+        skillMatchScore = 0.2;
     }
 
     // 3. Interaction Intelligence (Mentor Performance)
@@ -248,7 +305,7 @@ export const findBestMentorForQuery = (queryId) => {
       highestScore = finalScore;
       bestMatch = { mentor, logData };
     }
-  });
+  }
 
   // Mark the best one as selected
   if (bestMatch) {
